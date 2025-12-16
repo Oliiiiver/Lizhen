@@ -202,14 +202,33 @@
             background: #000; border-radius: 10px;
             box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
             overflow: hidden; position: relative;
+            display: none; /* 默认隐藏所有视频，等点击年份再显示 */
         }
+        
+        /* 🎬 年份选择菜单 */
+        #video-select-menu {
+            display: flex; flex-direction: column; align-items: center; gap: 20px;
+        }
+        .year-btn {
+            background: #FF8C42; color: white; border: 2px solid white;
+            padding: 15px 40px; font-size: 1.5em; border-radius: 50px;
+            cursor: pointer; font-family: inherit; transition: 0.3s;
+            box-shadow: 0 5px 15px rgba(255,140,66,0.4);
+        }
+        .year-btn:hover { transform: scale(1.1); background: #FFD54F; color: #5D4037; }
+        .year-btn-secondary { background: #5D8C62; box-shadow: 0 5px 15px rgba(93,140,98,0.4); }
+        .year-btn-secondary:hover { background: #8FBDA6; }
+
         .close-video-btn {
-            margin-top: 20px; padding: 10px 30px;
+            margin-top: 30px; padding: 10px 30px;
             background: transparent; border: 2px solid rgba(255,255,255,0.5);
             color: white; border-radius: 30px; cursor: pointer;
             font-family: inherit; font-size: 1.1em; transition: 0.3s;
         }
         .close-video-btn:hover { background: white; color: black; border-color: white; }
+        
+        /* 视频顶部的小标题 */
+        .video-label { color: white; margin-bottom: 10px; font-size: 1.2em; opacity: 0.8; display: none; }
 
     </style>
 </head>
@@ -328,10 +347,18 @@
 
     <div class="music-control" onclick="toggleMusic()">🎵</div>
 
-    <div class="video-trigger" onclick="openCinema()" title="播放应援视频">🎬</div>
+    <div class="video-trigger" onclick="openCinema()" title="打开回忆放映机">🎬</div>
 
     <div id="video-modal">
-        <div class="video-wrapper">
+        
+        <div id="video-select-menu">
+            <h2 style="color:white; margin-bottom:30px; text-shadow:0 0 10px rgba(0,0,0,0.5);">📽️ 请选择放映年份</h2>
+            <button class="year-btn year-btn-secondary" onclick="playVideo('2024')">📼 2024</button>
+            <button class="year-btn" onclick="playVideo('2025')">✨ 2025</button>
+        </div>
+
+        <div id="video-label-2024" class="video-label">📼 2024 真题</div>
+        <div id="wrapper-2024" class="video-wrapper">
             <script src="https://fast.wistia.com/player.js" async></script>
             <script src="https://fast.wistia.com/embed/dtv8rekm4l.js" async type="module"></script>
             <style>
@@ -341,8 +368,25 @@
                 }
             </style> 
             <wistia-player media-id="dtv8rekm4l" aspect="1.6"></wistia-player>
-            </div>
-        <button class="close-video-btn" onclick="closeCinema()">❌ 关闭影院</button>
+        </div>
+
+        <div id="video-label-2025" class="video-label">✨ 2025 真题</div>
+        <div id="wrapper-2025" class="video-wrapper">
+            <script src="https://fast.wistia.com/embed/psjqlz0kl9.js" async type="module"></script>
+            <style>
+                wistia-player[media-id='psjqlz0kl9']:not(:defined) { 
+                    background: center / contain no-repeat url('https://fast.wistia.com/embed/medias/psjqlz0kl9/swatch'); 
+                    display: block; filter: blur(5px); padding-top:62.5%; 
+                }
+            </style> 
+            <wistia-player media-id="psjqlz0kl9" aspect="1.6"></wistia-player>
+        </div>
+
+        <div style="display:flex; gap:15px;">
+            <button id="back-btn" class="close-video-btn" style="display:none" onclick="backToMenu()">⬅️ 返回</button>
+            <button class="close-video-btn" onclick="closeCinema()">❌ 关闭影院</button>
+        </div>
+
     </div>
 
     <script>
@@ -358,34 +402,61 @@
         }
         function toggleMusic() { bgm.paused ? bgm.play() : bgm.pause(); }
 
-        // --- 🎥 视频逻辑 (Wistia版) ---
+        // --- 🎥 多视频逻辑 (更新版) ---
         const videoModal = document.getElementById('video-modal');
+        const menu = document.getElementById('video-select-menu');
+        const backBtn = document.getElementById('back-btn');
         let isMusicPlayingBeforeVideo = false;
 
         function openCinema() {
             videoModal.style.display = 'flex';
             setTimeout(() => { videoModal.style.opacity = '1'; }, 10);
-            
-            // 核心功能：暂停背景音乐，避免声音打架
+            backToMenu(); // 每次打开默认显示菜单
+        }
+
+        function playVideo(year) {
+            // 1. 暂停背景音乐
             if (!bgm.paused) {
                 bgm.pause();
                 isMusicPlayingBeforeVideo = true;
             } else {
                 isMusicPlayingBeforeVideo = false;
             }
+
+            // 2. 隐藏菜单，显示返回键
+            menu.style.display = 'none';
+            backBtn.style.display = 'block';
+
+            // 3. 隐藏所有视频和标签
+            document.querySelectorAll('.video-wrapper').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('.video-label').forEach(el => el.style.display = 'none');
+
+            // 4. 显示对应年份
+            if(year === '2024') {
+                document.getElementById('wrapper-2024').style.display = 'block';
+                document.getElementById('video-label-2024').style.display = 'block';
+            } else if(year === '2025') {
+                document.getElementById('wrapper-2025').style.display = 'block';
+                document.getElementById('video-label-2025').style.display = 'block';
+            }
+        }
+
+        function backToMenu() {
+            // 暂停所有视频
+            document.querySelectorAll('wistia-player').forEach(p => {
+                if(p.pause) p.pause();
+            });
+
+            // 显示菜单，隐藏视频
+            menu.style.display = 'flex';
+            backBtn.style.display = 'none';
+            document.querySelectorAll('.video-wrapper').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('.video-label').forEach(el => el.style.display = 'none');
         }
 
         function closeCinema() {
-            // 尝试暂停 Wistia 视频 (如果有API支持)
-            try {
-                const wp = document.querySelector('wistia-player');
-                if (wp && wp.pause) {
-                    wp.pause();
-                }
-            } catch (e) {
-                console.log("无法自动暂停视频，请手动暂停");
-            }
-
+            backToMenu(); // 顺便暂停视频
+            
             videoModal.style.opacity = '0';
             setTimeout(() => { videoModal.style.display = 'none'; }, 500);
             
@@ -524,4 +595,3 @@
     </script>
 </body>
 </html>
-
